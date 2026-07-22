@@ -26,7 +26,8 @@ import {
   FaTrash, 
   FaToggleOn, 
   FaToggleOff,
-  FaLock
+  FaLock,
+  FaQrcode
 } from 'react-icons/fa';
 import { MyContext } from '../../contexts/MyContext';
 import axios from 'axios';
@@ -95,6 +96,92 @@ const Configuracoes = ({ theme }) => {
     diretoria: []
   });
   const [salvandoPermissoes, setSalvandoPermissoes] = useState(false);
+  const [modalQrOpen, setModalQrOpen] = useState(false);
+
+  const getRegistrationUrl = () => {
+    const base = window.location.pathname.split('/configuracoes')[0] || '';
+    return `${window.location.origin}${base}/cadastro-cliente`;
+  };
+
+  const handlePrintQr = () => {
+    const url = getRegistrationUrl();
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Imprimir QR Code - Bazar Amigos da Casa</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              text-align: center;
+              padding: 50px;
+              color: #334155;
+            }
+            .container {
+              border: 3px solid #0d9488;
+              border-radius: 16px;
+              padding: 40px;
+              max-width: 500px;
+              margin: 0 auto;
+              box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            }
+            h1 {
+              color: #0d9488;
+              margin-bottom: 5px;
+              font-size: 28px;
+            }
+            h2 {
+              color: #64748b;
+              font-size: 18px;
+              font-weight: normal;
+              margin-top: 0;
+              margin-bottom: 30px;
+            }
+            img {
+              margin: 20px 0;
+              border: 1px solid #e2e8f0;
+              padding: 10px;
+              background: white;
+            }
+            p {
+              font-size: 16px;
+              line-height: 1.5;
+              margin: 20px 0;
+            }
+            .link {
+              font-family: monospace;
+              background: #f1f5f9;
+              padding: 8px 12px;
+              border-radius: 6px;
+              word-break: break-all;
+              display: inline-block;
+            }
+            @media print {
+              body { padding: 0; }
+              .container { border: none; box-shadow: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Bazar Beneficente</h1>
+            <h2>Amigos da Casa</h2>
+            <p><strong>Auto-cadastro de Compradores</strong></p>
+            <img src="${qrUrl}" width="280" height="280" />
+            <p>Aponte a câmera do seu celular para realizar seu cadastro de comprador.</p>
+            <div class="link">${url}</div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   // Carregar configurações gerais
   const loadGeral = async () => {
@@ -543,6 +630,24 @@ const Configuracoes = ({ theme }) => {
                       </Button>
                     </Form.Item>
                   </Form>
+
+                  <Card 
+                    title={<span className="text-slate-800 font-bold">QR Code para Auto-Cadastro</span>} 
+                    size="small" 
+                    className="mt-6 border-slate-200"
+                  >
+                    <p className="text-slate-500 text-xs mb-4">
+                      Exiba ou imprima este QR Code para permitir que os compradores realizem o auto-cadastro na loja física usando seus próprios celulares.
+                    </p>
+                    <Button 
+                      type="default" 
+                      icon={<FaQrcode />} 
+                      onClick={() => setModalQrOpen(true)}
+                      className="border-teal-600 text-teal-600 hover:text-teal-700 hover:border-teal-700"
+                    >
+                      Gerar QR Code de Cadastro
+                    </Button>
+                  </Card>
                 </div>
               )
             },
@@ -823,6 +928,48 @@ const Configuracoes = ({ theme }) => {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Modal para Visualizar QR Code */}
+      <Modal
+        title="QR Code para Cadastro de Compradores"
+        open={modalQrOpen}
+        onCancel={() => setModalQrOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalQrOpen(false)}>
+            Fechar
+          </Button>,
+          <Button 
+            key="print" 
+            type="primary" 
+            icon={<FaQrcode />} 
+            onClick={handlePrintQr}
+            className="bg-teal-600 hover:bg-teal-700 border-none"
+          >
+            Imprimir QR Code
+          </Button>
+        ]}
+        width={400}
+        centered
+      >
+        <div className="text-center py-4 flex flex-col items-center justify-center">
+          <div className="border border-slate-200 p-4 rounded-xl bg-white mb-4 shadow-sm">
+            <img 
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(getRegistrationUrl())}`} 
+              alt="QR Code de Cadastro" 
+              style={{ display: 'block', width: '250px', height: '250px' }}
+            />
+          </div>
+          <p className="text-slate-700 text-sm font-semibold mb-1">
+            Bazar Beneficente - Amigos da Casa
+          </p>
+          <p className="text-slate-400 text-xs px-4 mb-4">
+            Aponte a câmera do celular para abrir a página de cadastro.
+          </p>
+          <code className="bg-slate-100 p-2 rounded text-xs text-slate-600 break-all select-all font-mono border border-slate-200 block w-full max-w-xs">
+            {getRegistrationUrl()}
+          </code>
+        </div>
       </Modal>
     </div>
   );
