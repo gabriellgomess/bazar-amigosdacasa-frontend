@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { 
   Card, 
   Tabs, 
@@ -13,7 +13,10 @@ import {
   Input, 
   message, 
   Popconfirm,
-  Tooltip
+  Tooltip,
+  Checkbox,
+  Row,
+  Col
 } from 'antd';
 import { 
   FaSlidersH, 
@@ -22,8 +25,10 @@ import {
   FaPlus, 
   FaTrash, 
   FaToggleOn, 
-  FaToggleOff 
+  FaToggleOff,
+  FaLock
 } from 'react-icons/fa';
+import { MyContext } from '../../contexts/MyContext';
 import axios from 'axios';
 
 const apiClient = axios.create({
@@ -48,6 +53,16 @@ apiClient.interceptors.request.use(
   }
 );
 
+const MENU_ITEMS = [
+  { path: '/venda', label: 'Venda (PDV)' },
+  { path: '/dashboard', label: 'Dashboard / Indicadores' },
+  { path: '/backoffice', label: 'Gerenciamento (Limites)' },
+  { path: '/estoque', label: 'Estoque' },
+  { path: '/transacoes', label: 'Transações / Auditoria' },
+  { path: '/perfil', label: 'Usuários / Acesso' },
+  { path: '/configuracoes', label: 'Configurações do Bazar' },
+];
+
 const Configuracoes = ({ theme }) => {
   const [activeTab, setActiveTab] = useState('1');
   const [loading, setLoading] = useState(false);
@@ -69,6 +84,18 @@ const Configuracoes = ({ theme }) => {
   const [modalVoucherOpen, setModalVoucherOpen] = useState(false);
   const [formVoucher] = Form.useForm();
 
+  // Estados de permissão e contexto de Usuário (Diretoria)
+  const { rootState } = useContext(MyContext);
+  const { theUser } = rootState;
+  const isDiretoria = theUser?.nivel_acesso?.toLowerCase() === 'diretoria';
+  
+  const [permissoes, setPermissoes] = useState({
+    user: [],
+    gerencia: [],
+    diretoria: []
+  });
+  const [salvandoPermissoes, setSalvandoPermissoes] = useState(false);
+
   // Carregar configurações gerais
   const loadGeral = async () => {
     try {
@@ -80,6 +107,15 @@ const Configuracoes = ({ theme }) => {
         permitir_cartoes_presente: response.data.permitir_cartoes_presente === '1',
         valor_padrao_voucher: parseFloat(response.data.valor_padrao_voucher || 150),
       });
+
+      if (response.data.permissoes_menus) {
+        try {
+          const parsed = JSON.parse(response.data.permissoes_menus);
+          setPermissoes(parsed);
+        } catch (e) {
+          console.error("Erro ao processar as permissões de menus:", e);
+        }
+      }
     } catch (error) {
       console.error("Erro ao carregar configurações gerais:", error);
       message.error("Não foi possível carregar as configurações gerais.");
@@ -106,6 +142,43 @@ const Configuracoes = ({ theme }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Salvar permissões de acessos dos perfis
+  const savePermissoes = async () => {
+    try {
+      setSalvandoPermissoes(true);
+      const geralValues = formGeral.getFieldsValue();
+      const payload = {
+        permitir_venda_funcionarios: geralValues.permitir_venda_funcionarios ? '1' : '0',
+        permitir_vouchers: geralValues.permitir_vouchers ? '1' : '0',
+        permitir_cartoes_presente: geralValues.permitir_cartoes_presente ? '1' : '0',
+        valor_padrao_voucher: geralValues.valor_padrao_voucher || 150,
+        permissoes_menus: JSON.stringify(permissoes),
+      };
+      await apiClient.post('/configuracoes', payload);
+      message.success("Permissões de acessos salvas com sucesso!");
+    } catch (error) {
+      console.error("Erro ao salvar permissões:", error);
+      message.error(error.response?.data?.message || "Erro ao salvar as permissões.");
+    } finally {
+      setSalvandoPermissoes(false);
+    }
+  };
+
+  // Alternar permissão de um caminho/menu para um perfil
+  const handleTogglePermission = (role, path) => {
+    if (role === 'diretoria') return; // Diretoria sempre tem acesso total
+    setPermissoes(prev => {
+      const current = prev[role] || [];
+      const updated = current.includes(path)
+        ? current.filter(p => p !== path)
+        : [...current, path];
+      return {
+        ...prev,
+        [role]: updated
+      };
+    });
   };
 
   // Carregar cartões de presente
@@ -560,7 +633,96 @@ const Configuracoes = ({ theme }) => {
                   />
                 </div>
               )
-            }
+            },
+            ...(isDiretoria ? [
+              {
+                key: '4',
+                label: (
+                  <span className="flex items-center gap-2">
+                    <FaLock /> Permissões
+                  </span>
+                ),
+                children: (
+                  <div className="py-4">
+                    <div className="mb-4">
+                      <p className="text-slate-500 text-sm">
+                        Selecione quais telas e menus cada nível de acesso pode visualizar e utilizar no sistema.
+                      </p>
+                    </div>
+                    
+                    <Table
+                      dataSource={MENU_ITEMS}
+                      rowKey="path"
+                      pagination={false}
+                      size="middle"
+                      columns={[
+                        {
+                          title: 'Menu / Funcionalidade',
+                          dataIndex: 'label',
+                          key: 'label',
+                          width: '40%',
+                          render: (text) => <strong>{text}</strong>
+                        },
+                        {
+                          title: 'Caminho',
+                          dataIndex: 'path',
+                          key: 'path',
+                          width: '20%',
+                          render: (text) => <code className="text-slate-500">{text}</code>
+                        },
+                        {
+                          title: 'Usuário (User)',
+                          key: 'user',
+                          width: '15%',
+                          align: 'center',
+                          render: (_, record) => (
+                            <Checkbox 
+                              checked={permissoes.user?.includes(record.path)}
+                              onChange={() => handleTogglePermission('user', record.path)}
+                            />
+                          )
+                        },
+                        {
+                          title: 'Gerência (Gerencia)',
+                          key: 'gerencia',
+                          width: '15%',
+                          align: 'center',
+                          render: (_, record) => (
+                            <Checkbox 
+                              checked={permissoes.gerencia?.includes(record.path)}
+                              onChange={() => handleTogglePermission('gerencia', record.path)}
+                            />
+                          )
+                        },
+                        {
+                          title: 'Diretoria (Diretoria)',
+                          key: 'diretoria',
+                          width: '10%',
+                          align: 'center',
+                          render: () => (
+                            <Checkbox 
+                              checked={true}
+                              disabled={true}
+                            />
+                          )
+                        }
+                      ]}
+                    />
+
+                    <div className="mt-6">
+                      <Button 
+                        type="primary" 
+                        onClick={savePermissoes} 
+                        loading={salvandoPermissoes}
+                        className="bg-teal-600 hover:bg-teal-700 border-none px-6"
+                      >
+                        Salvar Permissões
+                      </Button>
+                    </div>
+                  </div>
+                )
+              }
+            ] : [])
           ]}
         />
       </Card>

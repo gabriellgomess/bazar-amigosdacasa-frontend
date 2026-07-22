@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { MyContext } from '../contexts/MyContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -15,7 +15,8 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { Avatar, Button, Drawer, Grid, Layout, Tooltip } from 'antd';
-import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Route, Routes, useLocation, Navigate } from 'react-router-dom';
+import axios from 'axios';
 
 import Venda from './Venda/';
 import Dashboard from './Dashboard/';
@@ -61,13 +62,28 @@ const getFirstAndLastName = (name = '') => {
   return name || 'Usuário';
 };
 
-const SidebarContent = ({ collapsed, currentPath, onNavigate, userName, nivelAcesso }) => {
+const SidebarContent = ({ collapsed, currentPath, onNavigate, userName, nivelAcesso, configuracoes }) => {
   const showCompact = collapsed;
   const isDiretoria = nivelAcesso?.toLowerCase() === 'diretoria';
+  const role = nivelAcesso?.toLowerCase() || 'user';
+
+  let permissoesMenus = null;
+  if (configuracoes && configuracoes.permissoes_menus) {
+    try {
+      permissoesMenus = JSON.parse(configuracoes.permissoes_menus);
+    } catch (e) {
+      console.error("Erro ao analisar permissões dinâmicas de menus:", e);
+    }
+  }
+
   const visibleItems = NAV_ITEMS.filter((item) => {
+    if (permissoesMenus && permissoesMenus[role]) {
+      return permissoesMenus[role].includes(item.path);
+    }
+    // Fallback estático padrão
     if (item.path === '/perfil') return isDiretoria;
-    if (item.path === '/backoffice') return nivelAcesso?.toLowerCase() !== 'user';
-    if (item.path === '/configuracoes') return true; // Habilitado para visualização e testes de todos os usuários
+    if (item.path === '/backoffice') return role !== 'user';
+    if (item.path === '/configuracoes') return true;
     return true;
   });
 
@@ -183,10 +199,44 @@ const Template = (props) => {
   const { theUser } = rootState;
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [configuracoes, setConfiguracoes] = useState(null);
   const { theme } = props;
   const location = useLocation();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+
+  useEffect(() => {
+    axios.get(`${import.meta.env.VITE_REACT_APP_URL}/configuracoes`)
+      .then((res) => {
+        setConfiguracoes(res.data);
+      })
+      .catch((err) => {
+        console.error("Erro ao obter as permissões de menus configuradas:", err);
+      });
+  }, []);
+
+  const role = theUser?.nivel_acesso?.toLowerCase() || 'user';
+  
+  let permissoesMenus = null;
+  if (configuracoes && configuracoes.permissoes_menus) {
+    try {
+      permissoesMenus = JSON.parse(configuracoes.permissoes_menus);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  const hasPermission = (path) => {
+    if (role === 'diretoria') return true; // Diretoria tem acesso a tudo
+    if (permissoesMenus && permissoesMenus[role]) {
+      return permissoesMenus[role].includes(path);
+    }
+    // Fallback padrão
+    if (path === '/perfil') return false;
+    if (path === '/backoffice') return role !== 'user';
+    if (path === '/configuracoes') return true;
+    return true;
+  };
 
   const toggleSidebar = () => {
     if (isMobile) {
@@ -212,6 +262,7 @@ const Template = (props) => {
             currentPath={location.pathname}
             userName={theUser.nome}
             nivelAcesso={theUser.nivel_acesso}
+            configuracoes={configuracoes}
           />
         </Sider>
       )}
@@ -238,6 +289,7 @@ const Template = (props) => {
           currentPath={location.pathname}
           userName={theUser.nome}
           nivelAcesso={theUser.nivel_acesso}
+          configuracoes={configuracoes}
           onNavigate={() => setMobileMenuOpen(false)}
         />
       </Drawer>
@@ -275,13 +327,13 @@ const Template = (props) => {
 
         <Content className="app-content">
           <Routes>
-            <Route path="venda" element={<Venda theme={theme} />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="estoque" element={<Estoque theme={theme} />} />
-            <Route path="transacoes" element={<Transacoes theme={theme} />} />
-            <Route path="backoffice" element={<Backoffice theme={theme} />} />
-            <Route path="perfil" element={<Perfil theme={theme} />} />
-            <Route path="configuracoes" element={<Configuracoes theme={theme} />} />
+            <Route path="venda" element={hasPermission('/venda') ? <Venda theme={theme} /> : <Navigate to="/" replace />} />
+            <Route path="dashboard" element={hasPermission('/dashboard') ? <Dashboard /> : <Navigate to="/venda" replace />} />
+            <Route path="estoque" element={hasPermission('/estoque') ? <Estoque theme={theme} /> : <Navigate to="/venda" replace />} />
+            <Route path="transacoes" element={hasPermission('/transacoes') ? <Transacoes theme={theme} /> : <Navigate to="/venda" replace />} />
+            <Route path="backoffice" element={hasPermission('/backoffice') ? <Backoffice theme={theme} /> : <Navigate to="/venda" replace />} />
+            <Route path="perfil" element={hasPermission('/perfil') ? <Perfil theme={theme} /> : <Navigate to="/venda" replace />} />
+            <Route path="configuracoes" element={hasPermission('/configuracoes') ? <Configuracoes theme={theme} /> : <Navigate to="/venda" replace />} />
           </Routes>
         </Content>
       </Layout>
