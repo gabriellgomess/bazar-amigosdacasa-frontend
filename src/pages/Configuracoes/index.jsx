@@ -31,6 +31,7 @@ import {
 } from 'react-icons/fa';
 import { MyContext } from '../../contexts/MyContext';
 import axios from 'axios';
+import LogoBazarHorizontal from '../../assets/logotipos_bazar/thumbnail_ADC_bazar_logotipo-04.png';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_REACT_APP_URL,
@@ -105,7 +106,13 @@ const Configuracoes = ({ theme }) => {
 
   const handlePrintQr = () => {
     const url = getRegistrationUrl();
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(url)}`;
+    
+    // Obter URL absoluta da logo utilizando elemento âncora temporário
+    const a = document.createElement('a');
+    a.href = LogoBazarHorizontal;
+    const logoUrl = a.href;
+
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <html>
@@ -113,64 +120,110 @@ const Configuracoes = ({ theme }) => {
           <title>Imprimir QR Code - Bazar Amigos da Casa</title>
           <style>
             body {
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
               text-align: center;
-              padding: 50px;
-              color: #334155;
+              padding: 40px 20px;
+              color: #1e293b;
+              background-color: #ffffff;
             }
             .container {
-              border: 3px solid #0d9488;
-              border-radius: 16px;
-              padding: 40px;
-              max-width: 500px;
+              border: 4px solid #0d9488;
+              border-radius: 24px;
+              padding: 50px 30px;
+              max-width: 550px;
               margin: 0 auto;
-              box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            }
+            .logo-img {
+              max-height: 85px;
+              max-width: 80%;
+              margin-bottom: 25px;
+              object-fit: contain;
             }
             h1 {
               color: #0d9488;
-              margin-bottom: 5px;
-              font-size: 28px;
+              font-size: 30px;
+              font-weight: 800;
+              margin: 0 0 10px 0;
+              letter-spacing: -0.025em;
             }
             h2 {
-              color: #64748b;
+              color: #475569;
               font-size: 18px;
-              font-weight: normal;
-              margin-top: 0;
-              margin-bottom: 30px;
+              font-weight: 600;
+              margin: 0 0 30px 0;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
             }
-            img {
-              margin: 20px 0;
-              border: 1px solid #e2e8f0;
-              padding: 10px;
-              background: white;
+            .qr-wrapper {
+              margin: 20px auto;
+              border: 2px solid #e2e8f0;
+              padding: 15px;
+              background: #ffffff;
+              display: inline-block;
+              border-radius: 16px;
+              box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
             }
-            p {
+            .qr-wrapper img {
+              display: block;
+            }
+            p.instruction {
               font-size: 16px;
-              line-height: 1.5;
-              margin: 20px 0;
+              line-height: 1.6;
+              margin: 25px 0 15px 0;
+              font-weight: 500;
+              color: #334155;
+            }
+            .link-container {
+              margin-top: 25px;
+            }
+            .link-label {
+              font-size: 11px;
+              color: #64748b;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              margin-bottom: 5px;
             }
             .link {
               font-family: monospace;
-              background: #f1f5f9;
-              padding: 8px 12px;
-              border-radius: 6px;
+              background: #f8fafc;
+              padding: 10px 16px;
+              border-radius: 8px;
               word-break: break-all;
               display: inline-block;
+              font-size: 13px;
+              color: #0f172a;
+              border: 1px solid #e2e8f0;
             }
             @media print {
-              body { padding: 0; }
-              .container { border: none; box-shadow: none; }
+              body { 
+                padding: 0; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+              }
+              .container { 
+                border: 4px solid #0d9488; 
+                box-shadow: none;
+                margin-top: 10px;
+              }
             }
           </style>
         </head>
         <body>
           <div class="container">
-            <h1>Bazar Beneficente</h1>
-            <h2>Amigos da Casa</h2>
-            <p><strong>Auto-cadastro de Compradores</strong></p>
-            <img src="${qrUrl}" width="280" height="280" />
-            <p>Aponte a câmera do seu celular para realizar seu cadastro de comprador.</p>
-            <div class="link">${url}</div>
+            <img class="logo-img" src="${logoUrl}" alt="Bazar Amigos da Casa" />
+            <h1>FAÇA SEU CADASTRO AQUI</h1>
+            <h2>Auto-cadastro de Compradores</h2>
+            <div class="qr-wrapper">
+              <img src="${qrUrl}" width="320" height="320" alt="QR Code" />
+            </div>
+            <p class="instruction">
+              Aponte a câmera do seu celular para o QR Code acima para realizar o seu cadastro.
+            </p>
+            <div class="link-container">
+              <div class="link-label">Ou acesse pelo link:</div>
+              <div class="link">${url}</div>
+            </div>
           </div>
           <script>
             window.onload = function() {
@@ -961,7 +1014,7 @@ const Configuracoes = ({ theme }) => {
             />
           </div>
           <p className="text-slate-700 text-sm font-semibold mb-1">
-            Bazar Beneficente - Amigos da Casa
+            Bazar - Amigos da Casa
           </p>
           <p className="text-slate-400 text-xs px-4 mb-4">
             Aponte a câmera do celular para abrir a página de cadastro.

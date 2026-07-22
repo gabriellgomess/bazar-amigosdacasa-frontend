@@ -99,7 +99,7 @@ function Login() {
         >
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '700', color: '#1f2937' }}>Acesso ao Sistema</h2>
-            <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Bazar Beneficente Amigos da Casa</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Bazar Amigos da Casa</p>
           </div>
 
           <Form onFinish={submitForm} layout="vertical" requiredMark={false}>
