@@ -1,0 +1,28 @@
+/* Responsivo para tamanho pequeno (sm) */
+  @media (max-width: 576px) {
+    .responsive-image {
+      width: 50%;
+    }
+  }
+  
+  /* Responsivo para tamanho médio (md) */
+  @media (min-width: 576px) and (max-width: 768px) {
+    .responsive-image {
+      width: 60%;
+    }
+  }
+  
+  /* Responsivo para tamanho grande (lg) */
+  @media (min-width: 768px) and (max-width: 992px) {
+    .responsive-image {
+      width: 40%;
+    }
+  }
+  
+  /* Responsivo para tamanho extra grande (xl) */
+  @media (min-width: 992px) {
+    .responsive-image {
+      width: 30%;
+    }
+  }
+  
