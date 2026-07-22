@@ -172,7 +172,7 @@ const Valores = ({
               )}
             </div>
 
-            {billingType && billingType !== 'Desconto em Folha' && billingType !== 'Acolhido' && (
+            {billingType && billingType !== 'Desconto em Folha' && billingType !== 'Acolhido' && !showFuncionario && (
               <div 
                 className="mt-4 p-4 rounded-xl border border-slate-200" 
                 style={{ 

@@ -145,6 +145,15 @@ const Venda = ({ theme }) => {
     }
   }, [total, valueGiftCard, useCashback, comprador]);
 
+  useEffect(() => {
+    if (showFuncionario) {
+      setComprador(null);
+      setCompradorCpf("");
+      setUseCashback(false);
+      setCashbackUsado(0);
+    }
+  }, [showFuncionario]);
+
   const gerarRequestIdVenda = () => {
     if (window.crypto?.randomUUID) {
       return window.crypto.randomUUID();
