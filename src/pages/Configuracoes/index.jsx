@@ -212,8 +212,7 @@ const Configuracoes = ({ theme }) => {
         <body>
           <div class="container">
             <img class="logo-img" src="${logoUrl}" alt="Bazar Amigos da Casa" />
-            <h1>FAÇA SEU CADASTRO AQUI</h1>
-            <h2>Auto-cadastro de Compradores</h2>
+            <h1>Cadastro Amigo do Bazar</h1>
             <div class="qr-wrapper">
               <img src="${qrUrl}" width="320" height="320" alt="QR Code" />
             </div>

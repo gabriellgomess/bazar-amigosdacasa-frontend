@@ -191,7 +191,12 @@ const Venda = ({ theme }) => {
     setUseCashback(false);
     setCashbackUsado(0);
     setDescontoPrimeiraCompra(0);
-    
+
+    // Zera o request_id da venda anterior: sem isso, a próxima venda reusa o
+    // mesmo request_id e o backend a trata como idempotente (não grava a
+    // transação nova, só confirma "sucesso" de novo).
+    requestIdVendaRef.current = null;
+
     // Recarregar configurações após limpar
     axios.get(`${import.meta.env.VITE_REACT_APP_URL}/configuracoes`)
       .then((res) => {
@@ -654,11 +659,23 @@ const Venda = ({ theme }) => {
       )
       .then((res) => {
         if (res.data && res.data.success) {
-          openNotificationWithIcon(
-            "success",
-            "Venda finalizada com sucesso",
-            "Sua venda foi processada e finalizada."
-          );
+          if (res.data.idempotent) {
+            // Isso não deveria acontecer numa venda nova: o backend identificou
+            // que esse request_id já tinha uma transação gravada e NÃO criou
+            // uma linha nova. Avisa em vez de mostrar sucesso normal, pra não
+            // esconder uma venda que ficou de fora.
+            openNotificationWithIcon(
+              "warning",
+              "Venda não gravada como nova",
+              "O sistema identificou essa venda como uma repetição de outra já registrada e não criou um novo registro. Se essa venda é diferente da anterior, avise o suporte antes de continuar."
+            );
+          } else {
+            openNotificationWithIcon(
+              "success",
+              "Venda finalizada com sucesso",
+              "Sua venda foi processada e finalizada."
+            );
+          }
           if (
             data.forma_pagamento === "Desconto em Folha" &&
             res.data.email_enviado === false

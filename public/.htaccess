@@ -1,0 +1,14 @@
+# SPA fallback para o React Router funcionar em https://amigosdacasa.org.br/bazar/
+# Qualquer rota que não seja um arquivo/pasta real cai no index.html
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /bazar/
+
+  # Não reescrever se o arquivo ou diretório existir de fato
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Tudo o mais cai no index.html (React Router assume a partir daí)
+  RewriteRule ^ index.html [L]
+</IfModule>

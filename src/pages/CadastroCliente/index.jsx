@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Input, Button, Form, Alert, Typography } from 'antd';
-import { FaUser, FaIdCard, FaPhone, FaEnvelope, FaMapMarkerAlt, FaCheckCircle } from 'react-icons/fa';
+import { Card, Input, Button, Form, Alert, Typography, Checkbox } from 'antd';
+import { FaUser, FaIdCard, FaPhone, FaEnvelope, FaMapMarkerAlt, FaCheckCircle, FaBirthdayCake } from 'react-icons/fa';
 import axios from 'axios';
 import LogoBazarVertical from "../../assets/logotipos_bazar/ADC_bazar_logotipo-06.png";
 import LogoCasaHorizontal from "../../assets/logos_casa/logo_horizontal_color.png";
@@ -12,6 +12,8 @@ const CadastroCliente = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+
+  const hoje = new Date().toISOString().split('T')[0];
 
   // Máscara básica para CPF
   const formatCPF = (value) => {
@@ -53,10 +55,12 @@ const CadastroCliente = () => {
     try {
       const response = await axios.post(`${import.meta.env.VITE_REACT_APP_URL}/registrar_comprador`, {
         nome_completo: values.nome_completo,
+        data_nascimento: values.data_nascimento,
         cpf: values.cpf,
         telefone: values.telefone,
         email: values.email,
         endereco: values.endereco,
+        aceite_lgpd: values.aceite_lgpd ? true : false,
       });
 
       if (response.data && response.data.success) {
@@ -74,17 +78,19 @@ const CadastroCliente = () => {
 
   return (
     <div className="min-h-screen w-full bg-slate-50 flex flex-col justify-center items-center p-4">
-      <Card 
+      <Card
         className="w-full max-w-lg shadow-xl border-t-4 border-teal-600 rounded-xl"
         style={{ padding: '8px' }}
       >
-        <div className="flex flex-col items-center mb-6">
-          <img src={LogoBazarVertical} alt="Logo Bazar Amigos da Casa" className="h-28 object-contain mb-4" />
-          <Title level={3} className="text-teal-800 text-center m-0">Cadastro do Comprador</Title>
-          <Text className="text-slate-500 text-center mt-2 block">
-            Cadastre-se agora e ganhe <strong>10% de desconto na primeira compra</strong>!
-          </Text>
-        </div>
+        {!success && (
+          <div className="flex flex-col items-center mb-6">
+            <img src={LogoBazarVertical} alt="Logo Bazar Amigos da Casa" className="h-28 object-contain mb-4" />
+            <Title level={3} className="text-teal-800 text-center m-0">Cadastro do Comprador</Title>
+            <Text className="text-slate-500 text-center mt-2 block">
+              Cadastre-se agora e ganhe <strong>10% de desconto na primeira compra</strong>!
+            </Text>
+          </div>
+        )}
 
         {success ? (
           <div className="flex flex-col items-center py-6 text-center">
@@ -93,8 +99,8 @@ const CadastroCliente = () => {
             <Text className="text-slate-600 text-base max-w-sm">
               Seu desconto de <strong>10%</strong> está ativado! Basta informar o seu CPF ao operador do caixa na hora de finalizar suas compras.
             </Text>
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               className="mt-6 bg-teal-600 hover:bg-teal-700 h-11 px-8 rounded-lg"
               onClick={() => {
                 setSuccess(false);
@@ -113,11 +119,11 @@ const CadastroCliente = () => {
             requiredMark={false}
           >
             {errorMsg && (
-              <Alert 
-                message={errorMsg} 
-                type="error" 
-                showIcon 
-                closable 
+              <Alert
+                message={errorMsg}
+                type="error"
+                showIcon
+                closable
                 className="mb-4"
                 onClose={() => setErrorMsg(null)}
               />
@@ -131,9 +137,32 @@ const CadastroCliente = () => {
                 { min: 3, message: 'Nome muito curto.' }
               ]}
             >
-              <Input 
-                prefix={<FaUser className="text-slate-400 mr-2" />} 
-                placeholder="Ex: João da Silva" 
+              <Input
+                prefix={<FaUser className="text-slate-400 mr-2" />}
+                placeholder="Ex: João da Silva"
+                className="h-11 rounded-lg"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="data_nascimento"
+              label="Data de Nascimento"
+              rules={[
+                { required: true, message: 'Por favor, informe sua data de nascimento.' },
+                {
+                  validator: (_, value) => {
+                    if (!value) return Promise.resolve();
+                    return value > hoje
+                      ? Promise.reject(new Error('Data de nascimento inválida.'))
+                      : Promise.resolve();
+                  }
+                }
+              ]}
+            >
+              <Input
+                type="date"
+                max={hoje}
+                prefix={<FaBirthdayCake className="text-slate-400 mr-2" />}
                 className="h-11 rounded-lg"
               />
             </Form.Item>
@@ -146,9 +175,9 @@ const CadastroCliente = () => {
                 { len: 14, message: 'O CPF deve ter 11 dígitos.' }
               ]}
             >
-              <Input 
-                prefix={<FaIdCard className="text-slate-400 mr-2" />} 
-                placeholder="000.000.000-00" 
+              <Input
+                prefix={<FaIdCard className="text-slate-400 mr-2" />}
+                placeholder="000.000.000-00"
                 onChange={onCPFChange}
                 className="h-11 rounded-lg"
               />
@@ -159,9 +188,9 @@ const CadastroCliente = () => {
               label="Telefone / Celular"
               rules={[{ required: true, message: 'Por favor, informe seu telefone.' }]}
             >
-              <Input 
-                prefix={<FaPhone className="text-slate-400 mr-2" />} 
-                placeholder="(00) 00000-0000" 
+              <Input
+                prefix={<FaPhone className="text-slate-400 mr-2" />}
+                placeholder="(00) 00000-0000"
                 onChange={onTelefoneChange}
                 className="h-11 rounded-lg"
               />
@@ -175,9 +204,9 @@ const CadastroCliente = () => {
                 { type: 'email', message: 'E-mail inválido.' }
               ]}
             >
-              <Input 
-                prefix={<FaEnvelope className="text-slate-400 mr-2" />} 
-                placeholder="seuemail@exemplo.com" 
+              <Input
+                prefix={<FaEnvelope className="text-slate-400 mr-2" />}
+                placeholder="seuemail@exemplo.com"
                 className="h-11 rounded-lg"
               />
             </Form.Item>
@@ -186,11 +215,32 @@ const CadastroCliente = () => {
               name="endereco"
               label="Endereço (Opcional)"
             >
-              <Input 
-                prefix={<FaMapMarkerAlt className="text-slate-400 mr-2" />} 
-                placeholder="Rua, Número, Bairro, Cidade" 
+              <Input
+                prefix={<FaMapMarkerAlt className="text-slate-400 mr-2" />}
+                placeholder="Rua, Número, Bairro, Cidade"
                 className="h-11 rounded-lg"
               />
+            </Form.Item>
+
+            <Text className="text-slate-400 block text-center mb-3" style={{ fontSize: 10, lineHeight: 1.4 }}>
+              Os dados pessoais informados serão utilizados exclusivamente para fins de cadastro, contato e relacionamento com a Casa de Saúde Menino Jesus de Praga, em conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD — Lei nº 13.709/2018).
+            </Text>
+
+            <Form.Item
+              name="aceite_lgpd"
+              valuePropName="checked"
+              rules={[
+                {
+                  validator: (_, checked) =>
+                    checked
+                      ? Promise.resolve()
+                      : Promise.reject(new Error('É necessário concordar com o tratamento dos dados para continuar.'))
+                }
+              ]}
+            >
+              <Checkbox className="text-slate-500" style={{ fontSize: 11, lineHeight: 1.4 }}>
+                Li e concordo com o tratamento dos meus dados pessoais para as finalidades informadas acima, nos termos da LGPD.
+              </Checkbox>
             </Form.Item>
 
             <Form.Item className="mb-0">

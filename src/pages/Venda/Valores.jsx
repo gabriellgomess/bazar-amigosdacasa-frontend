@@ -60,6 +60,8 @@ const Valores = ({
   const [registering, setRegistering] = useState(false);
   const [regForm] = Form.useForm();
 
+  const hoje = new Date().toISOString().split('T')[0];
+
   const apenasCartaoPresente = items.length === 1 && items[0].tipo === "cartao_presente";
   const temCartaoPresenteValido = show_gift_card && id_card > 0 && valueGiftCard > 0;
 
@@ -96,10 +98,12 @@ const Valores = ({
     try {
       const response = await axios.post(`${import.meta.env.VITE_REACT_APP_URL}/registrar_comprador`, {
         nome_completo: values.nome_completo,
+        data_nascimento: values.data_nascimento,
         cpf: compradorCpf.replace(/[^\d]+/g, ""),
         telefone: values.telefone,
         email: values.email,
         endereco: values.endereco,
+        aceite_lgpd: values.aceite_lgpd ? true : false,
       });
 
       if (response.data && response.data.success) {
@@ -444,6 +448,23 @@ const Valores = ({
             <Input placeholder="Ex: João da Silva" style={{ height: '40px', borderRadius: '6px' }} />
           </Form.Item>
           <Form.Item
+            name="data_nascimento"
+            label="Data de Nascimento"
+            rules={[
+              { required: true, message: 'Informe a data de nascimento.' },
+              {
+                validator: (_, value) => {
+                  if (!value) return Promise.resolve();
+                  return value > hoje
+                    ? Promise.reject(new Error('Data de nascimento inválida.'))
+                    : Promise.resolve();
+                }
+              }
+            ]}
+          >
+            <Input type="date" max={hoje} style={{ height: '40px', borderRadius: '6px' }} />
+          </Form.Item>
+          <Form.Item
             name="telefone"
             label="Telefone"
             rules={[{ required: true, message: 'Informe o telefone.' }]}
@@ -466,6 +487,28 @@ const Valores = ({
           >
             <Input placeholder="Ex: Rua das Flores, 123" style={{ height: '40px', borderRadius: '6px' }} />
           </Form.Item>
+
+          <Text style={{ display: 'block', fontSize: 10, lineHeight: 1.4, color: '#94a3b8', marginBottom: 12 }}>
+            Os dados pessoais informados serão utilizados exclusivamente para fins de cadastro, contato e relacionamento com a Casa de Saúde Menino Jesus de Praga, em conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD — Lei nº 13.709/2018).
+          </Text>
+
+          <Form.Item
+            name="aceite_lgpd"
+            valuePropName="checked"
+            rules={[
+              {
+                validator: (_, checked) =>
+                  checked
+                    ? Promise.resolve()
+                    : Promise.reject(new Error('É necessário o consentimento do comprador para continuar.'))
+              }
+            ]}
+          >
+            <Checkbox style={{ fontSize: 11, lineHeight: 1.4, color: '#64748b' }}>
+              O comprador foi informado e concorda com o tratamento dos seus dados pessoais para as finalidades acima, nos termos da LGPD.
+            </Checkbox>
+          </Form.Item>
+
           <div style={{ display: 'flex', justifyContent: 'end', gap: '8px', marginTop: '16px' }}>
             <Button onClick={() => setIsModalOpen(false)}>Cancelar</Button>
             <Button type="primary" htmlType="submit" loading={registering}>
